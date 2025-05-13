@@ -32,7 +32,8 @@ public class AddChatScreen extends Screen {
 
 	@Override
 	protected void init() {
-		TextWidget titleText = new TextWidget(Text.translatable("chatbinds.addScreen.title"), client.textRenderer);
+		if (client == null) return;
+        TextWidget titleText = new TextWidget(Text.translatable("chatbinds.addScreen.title"), client.textRenderer);
 		titleText.setX(width / 4);
 		titleText.setY((height / 2) - 64);
 		addDrawable(titleText);
@@ -146,9 +147,9 @@ public class AddChatScreen extends Screen {
 		String cmd = commandBox.getText().strip();
 		String title = titleBox.getText().strip();
 
-		if (cmd.length() == 0)
+		if (cmd.isEmpty())
 			return;
-		if (title.length() == 0)
+		if (title.isEmpty())
 			title = cmd;
 
 		ChatBinds.registerCommand(cmd, title).bind.setBoundKey(key);
@@ -160,6 +161,7 @@ public class AddChatScreen extends Screen {
 
 	@Override
 	public void close() {
+		if (client == null) return;
 		client.setScreen(parent);
-	}
+    }
 }

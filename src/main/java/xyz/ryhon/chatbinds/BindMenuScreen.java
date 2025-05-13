@@ -77,6 +77,7 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 	}
 
 	void onAdd(ButtonWidget w) {
+		if (client == null) return;
 		client.setScreen(new AddChatScreen("", this));
 	}
 
@@ -100,10 +101,11 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 
 	@Override
 	public void close() {
+		if (client == null) return;
 		client.setScreen(parent);
 	}
 
-	class BindList extends AlwaysSelectedEntryListWidget<BindList.Entry> {
+	static class BindList extends AlwaysSelectedEntryListWidget<BindList.Entry> {
 		public BindMenuScreen parent;
 
 		public BindList(BindMenuScreen parent, MinecraftClient client, int w, int h) {
@@ -122,7 +124,7 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 			}
 		}
 
-		static class Entry extends AlwaysSelectedEntryListWidget.Entry<Entry> {
+		public static class Entry extends AlwaysSelectedEntryListWidget.Entry<Entry> {
 			MinecraftClient client;
 			public ChatBind bind;
 			BindList parent;
@@ -176,10 +178,11 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
 		if (selectedEntry != null) {
-			if (keyCode == GLFW.GLFW_KEY_ESCAPE)
-				client.options.setKeyCode(selectedEntry.bind.bind, InputUtil.UNKNOWN_KEY);
-			else
-				client.options.setKeyCode(selectedEntry.bind.bind, InputUtil.fromKeyCode(keyCode, scanCode));
+			if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+				ChatBinds.registerCommand(selectedEntry.bind.cmd, selectedEntry.bind.title).bind.setBoundKey(InputUtil.UNKNOWN_KEY);
+			} else {
+				ChatBinds.registerCommand(selectedEntry.bind.cmd, selectedEntry.bind.title).bind.setBoundKey(InputUtil.fromKeyCode(keyCode, scanCode));
+			}
 			KeyBinding.updateKeysByCode();
 
 			selectedEntry.update();
@@ -193,7 +196,7 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (selectedEntry != null) {
-			client.options.setKeyCode(selectedEntry.bind.bind, InputUtil.Type.MOUSE.createFromCode(button));
+			ChatBinds.registerCommand(selectedEntry.bind.cmd, selectedEntry.bind.title).bind.setBoundKey(InputUtil.Type.MOUSE.createFromCode(button));
 			KeyBinding.updateKeysByCode();
 			selectedEntry.update();
 			selectedEntry = null;

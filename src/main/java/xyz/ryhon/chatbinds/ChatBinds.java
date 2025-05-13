@@ -3,9 +3,9 @@ package xyz.ryhon.chatbinds;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.impl.client.keybinding.KeyBindingRegistryImpl;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import java.util.ArrayList;
@@ -53,13 +53,16 @@ public class ChatBinds implements ModInitializer {
 	}
 
 	public static void sendMessage(String msg) {
-		if (msg.startsWith("/"))
-			MinecraftClient.getInstance().player.networkHandler.sendChatCommand(msg.substring(1));
-		else
-			MinecraftClient.getInstance().player.networkHandler.sendChatMessage(msg);
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
+		if (player == null) return;
+		if (msg.startsWith("/")) {
+			player.networkHandler.sendChatCommand(msg.substring(1));
+		} else {
+			player.networkHandler.sendChatMessage(msg);
+		}
 	}
 
-	static class ChatBind {
+	public static class ChatBind {
 		public KeyBinding bind;
 		public String cmd;
 		public String title;
@@ -73,15 +76,7 @@ public class ChatBinds implements ModInitializer {
 				InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
 				"category.chatbinds.user");
 
-		MinecraftClient mc = MinecraftClient.getInstance();
-		if (mc.options != null) {
-			KeyBindingRegistryImpl.addCategory(b.bind.getCategory());
-			ArrayList<KeyBinding> keys = new ArrayList<>();
-			keys.addAll(Arrays.asList(mc.options.allKeys));
-			keys.add(b.bind);
-			mc.options.allKeys = keys.toArray(new KeyBinding[0]);
-		} else
-			KeyBindingHelper.registerKeyBinding(b.bind);
+		b.bind = KeyBindingHelper.registerKeyBinding(b.bind);
 
 		Binds.add(b);
 		return b;
@@ -91,8 +86,7 @@ public class ChatBinds implements ModInitializer {
 		Binds.remove(bind);
 
 		MinecraftClient mc = MinecraftClient.getInstance();
-		ArrayList<KeyBinding> keys = new ArrayList<>();
-		keys.addAll(Arrays.asList(mc.options.allKeys));
+        ArrayList<KeyBinding> keys = new ArrayList<>(Arrays.asList(mc.options.allKeys));
 		keys.remove(bind.bind);
 		mc.options.allKeys = keys.toArray(new KeyBinding[0]);
 	}
