@@ -97,7 +97,6 @@ public class ChatBinds implements ModInitializer {
 
 			for (JsonElement je : ja) {
 				if (je instanceof JsonObject jo) {
-					ChatBind b = new ChatBind();
 					String title = jo.get("title").getAsString();
 					String cmd = jo.get("cmd").getAsString();
 					InputUtil.Key key = InputUtil.Type.KEYSYM.createFromCode(jo.get("key").getAsInt());
