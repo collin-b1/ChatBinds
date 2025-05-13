@@ -4,22 +4,15 @@ import com.terraformersmc.modmenu.api.ModMenuApi;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.option.KeybindsScreen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextWidget;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import xyz.ryhon.chatbinds.ChatBinds.ChatBind;
 
-import java.util.List;
-
 import org.lwjgl.glfw.GLFW;
-
-import com.google.common.collect.ImmutableList;
 
 public class BindMenuScreen extends Screen implements ModMenuApi {
 	Screen parent;

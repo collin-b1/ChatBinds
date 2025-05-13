@@ -51,6 +51,7 @@ public class AddChatScreen extends Screen {
 		commandBox = new TextFieldWidget(client.textRenderer, width / 2, 24, Text.empty());
 		titleBox.setChangedListener(this::onCommandChanged);
 		commandBox.setPosition(width / 2 - (commandBox.getWidth() / 2), commandText.getY() + commandText.getHeight());
+		commandBox.setMaxLength(256);
 		addDrawable(commandBox);
 		addSelectableChild(commandBox);
 		this.setInitialFocus(commandBox);
