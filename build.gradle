@@ -34,9 +34,9 @@ processResources {
 	}
 }
 
-loom {
-	accessWidenerPath = file("src/main/resources/chatbinds.accesswidener")
-}
+//loom {
+//	accessWidenerPath = file("src/main/resources/chatbinds.accesswidener")
+//}
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 21

@@ -9,9 +9,9 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -26,7 +26,10 @@ import com.google.gson.JsonPrimitive;
 
 public class ChatBinds implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("chat-binds");
-	static ArrayList<ChatBind> Binds = new ArrayList<>();
+
+	private static ArrayList<ChatBind> userBinds = new ArrayList<>();
+	private static final Path configDir = FabricLoader.getInstance().getConfigDir().resolve("chatbinds");
+	private static final Path configFileBinds = configDir.resolve("binds.json");
 
 	@Override
 	public void onInitialize() {
@@ -39,20 +42,29 @@ public class ChatBinds implements ModInitializer {
 				"category.chatbinds");
 		KeyBindingHelper.registerKeyBinding(addChatBind);
 
-		ClientTickEvents.START_CLIENT_TICK.register(client -> {
-			if (menuBind.wasPressed())
-				client.setScreen(new BindMenuScreen(null));
-			if (addChatBind.wasPressed())
-				client.setScreen(new AddChatScreen("", null));
-
-			for (ChatBind b : Binds)
-				if (b.bind.wasPressed())
-					sendMessage(b.cmd);
-		});
 		loadConfig();
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (client.currentScreen == null && client.player != null) {
+				if (menuBind.wasPressed())
+					client.setScreen(new BindMenuScreen(null));
+				if (addChatBind.wasPressed())
+					client.setScreen(new AddChatScreen("", null));
+
+				for (ChatBind b : userBinds) {
+					if (InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), b.key.getCode())) {
+						if (!b.wasKeyPressed) {
+							sendMessage(b.cmd);
+							b.wasKeyPressed = true;
+						}
+					} else {
+						b.wasKeyPressed = false;
+					}
+				}
+			}
+		});
 	}
 
-	public static void sendMessage(String msg) {
+	public void sendMessage(String msg) {
 		ClientPlayerEntity player = MinecraftClient.getInstance().player;
 		if (player == null) return;
 		if (msg.startsWith("/")) {
@@ -63,39 +75,17 @@ public class ChatBinds implements ModInitializer {
 	}
 
 	public static class ChatBind {
-		public KeyBinding bind;
+		public InputUtil.Key key;
 		public String cmd;
 		public String title;
+
+		// Tracks if the key bind was pressed last tick.
+		// Used to prevent multiple messages getting send when key is held.
+		public boolean wasKeyPressed = false;
 	}
 
-	public static ChatBind registerCommand(String cmd, String title) {
-		ChatBind b = new ChatBind();
-		b.cmd = cmd;
-		b.title = title;
-		b.bind = new KeyBinding(title,
-				InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
-				"category.chatbinds.user");
-
-		b.bind = KeyBindingHelper.registerKeyBinding(b.bind);
-
-		Binds.add(b);
-		return b;
-	}
-
-	public static void removeCommand(ChatBind bind) {
-		Binds.remove(bind);
-
-		MinecraftClient mc = MinecraftClient.getInstance();
-        ArrayList<KeyBinding> keys = new ArrayList<>(Arrays.asList(mc.options.allKeys));
-		keys.remove(bind.bind);
-		mc.options.allKeys = keys.toArray(new KeyBinding[0]);
-	}
-
-	static Path configDir = FabricLoader.getInstance().getConfigDir().resolve("chatbinds");
-	static Path configFileBinds = configDir.resolve("binds.json");
-
-	static void loadConfig() {
-		Binds = new ArrayList<>();
+	public static void loadConfig() {
+		userBinds = new ArrayList<>();
 
 		try {
 			Files.createDirectories(configDir);
@@ -105,21 +95,44 @@ public class ChatBinds implements ModInitializer {
 			String str = Files.readString(configFileBinds);
 			JsonArray ja = (JsonArray) JsonParser.parseString(str);
 
-			for (JsonElement je : ja)
-				if (je instanceof JsonObject jo)
-					registerCommand(jo.get("cmd").getAsString(), jo.get("title").getAsString());
+			for (JsonElement je : ja) {
+				if (je instanceof JsonObject jo) {
+					ChatBind b = new ChatBind();
+					String title = jo.get("title").getAsString();
+					String cmd = jo.get("cmd").getAsString();
+					InputUtil.Key key = InputUtil.Type.KEYSYM.createFromCode(jo.get("key").getAsInt());
+					registerUserBind(title, cmd, key);
+				}
+			}
 		} catch (Exception e) {
 			LOGGER.error("Failed to load config", e);
 		}
 	}
 
-	static void saveConfig() {
+	public static List<ChatBind> getUserBinds() {
+		return userBinds;
+	}
+
+	public static boolean registerUserBind(String title, String cmd, InputUtil.Key key) {
+		ChatBind b = new ChatBind();
+		b.title = title;
+		b.cmd = cmd;
+		b.key = key;
+		return userBinds.add(b);
+	}
+
+	public static boolean unregisterUserBind(ChatBind bind) {
+		return userBinds.remove(bind);
+	}
+
+	public static void saveConfig() {
 		JsonArray ja = new JsonArray();
 
-		for (ChatBind b : Binds) {
+		for (ChatBind b : userBinds) {
 			JsonObject jo = new JsonObject();
 			jo.add("cmd", new JsonPrimitive(b.cmd));
 			jo.add("title", new JsonPrimitive(b.title));
+			jo.add("key", new JsonPrimitive(b.key.getCode()));
 
 			ja.add(jo);
 		}
