@@ -1,5 +1,7 @@
 package xyz.ryhon.chatbinds;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -24,6 +26,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
+@Environment(EnvType.CLIENT)
 public class ChatBinds implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("chat-binds");
 

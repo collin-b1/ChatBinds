@@ -10,6 +10,8 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 
 public class AddChatScreen extends Screen {
+	private final Screen parent;
+
 	TextFieldWidget titleBox;
 	TextFieldWidget commandBox;
 
@@ -17,14 +19,12 @@ public class AddChatScreen extends Screen {
 	ButtonWidget addButton;
 	ButtonWidget cancelButton;
 
-	Screen parent;
-
 	String cmd;
 	InputUtil.Key key = InputUtil.UNKNOWN_KEY;
 	boolean listening;
 
 	public AddChatScreen(String cmd_, Screen parent) {
-		super(Text.empty());
+		super(Text.translatable("chatbinds.key.add_chat"));
 		cmd = cmd_;
 		this.parent = parent;
 	}

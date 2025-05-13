@@ -1,7 +1,5 @@
 package xyz.ryhon.chatbinds;
 
-import com.terraformersmc.modmenu.api.ModMenuApi;
-
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -13,12 +11,12 @@ import xyz.ryhon.chatbinds.ChatBinds.ChatBind;
 
 import org.lwjgl.glfw.GLFW;
 
-public class BindMenuScreen extends Screen implements ModMenuApi {
-	Screen parent;
+public class BindMenuScreen extends Screen {
+	private final Screen parent;
 	public BindList.Entry selectedEntry;
 
 	public BindMenuScreen(Screen parent) {
-		super(Text.empty());
+		super(Text.translatable("chatbinds.key.menu"));
 		this.parent = parent;
 	}
 
@@ -84,7 +82,7 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 
 	void onReload(ButtonWidget w) {
 		ChatBinds.loadConfig();
-		init();
+		list.updateEntries();
 	}
 
 	void onClose(ButtonWidget w) {
