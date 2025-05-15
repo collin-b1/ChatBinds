@@ -1,32 +1,22 @@
 package xyz.ryhon.chatbinds;
 
-import com.terraformersmc.modmenu.api.ModMenuApi;
-
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.option.KeybindsScreen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextWidget;
-import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import xyz.ryhon.chatbinds.ChatBinds.ChatBind;
 
-import java.util.List;
-
 import org.lwjgl.glfw.GLFW;
 
-import com.google.common.collect.ImmutableList;
-
-public class BindMenuScreen extends Screen implements ModMenuApi {
-	Screen parent;
+public class BindMenuScreen extends Screen {
+	private final Screen parent;
 	public BindList.Entry selectedEntry;
 
 	public BindMenuScreen(Screen parent) {
-		super(Text.empty());
+		super(Text.translatable("chatbinds.key.menu"));
 		this.parent = parent;
 	}
 
@@ -77,13 +67,14 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 	}
 
 	void onAdd(ButtonWidget w) {
+		if (client == null) return;
 		client.setScreen(new AddChatScreen("", this));
 	}
 
 	void onRemove(ButtonWidget w) {
 		BindList.Entry e = list.getSelectedOrNull();
 		if (e != null) {
-			ChatBinds.removeCommand(e.bind);
+			ChatBinds.unregisterUserBind(e.bind);
 			ChatBinds.saveConfig();
 			list.updateEntries();
 		}
@@ -91,7 +82,7 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 
 	void onReload(ButtonWidget w) {
 		ChatBinds.loadConfig();
-		init();
+		list.updateEntries();
 	}
 
 	void onClose(ButtonWidget w) {
@@ -100,10 +91,11 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 
 	@Override
 	public void close() {
+		if (client == null) return;
 		client.setScreen(parent);
 	}
 
-	class BindList extends AlwaysSelectedEntryListWidget<BindList.Entry> {
+	static class BindList extends AlwaysSelectedEntryListWidget<BindList.Entry> {
 		public BindMenuScreen parent;
 
 		public BindList(BindMenuScreen parent, MinecraftClient client, int w, int h) {
@@ -114,7 +106,7 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 
 		public void updateEntries() {
 			this.clearEntries();
-			for (ChatBind b : ChatBinds.Binds) {
+			for (ChatBind b : ChatBinds.getUserBinds()) {
 				Entry e = new Entry(client, b, this);
 				addEntry(e);
 				if (getSelectedOrNull() == null)
@@ -122,7 +114,7 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 			}
 		}
 
-		static class Entry extends AlwaysSelectedEntryListWidget.Entry<Entry> {
+		public static class Entry extends AlwaysSelectedEntryListWidget.Entry<Entry> {
 			MinecraftClient client;
 			public ChatBind bind;
 			BindList parent;
@@ -138,7 +130,7 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 			}
 
 			public void update() {
-				keyButton.setMessage(bind.bind.getBoundKeyLocalizedText());
+				keyButton.setMessage(bind.key.getLocalizedText());
 			}
 
 			void onButton(ButtonWidget b) {
@@ -154,8 +146,11 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 			@Override
 			public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
 					int mouseX, int mouseY, boolean hovered, float tickDelta) {
-				context.drawTextWithShadow(client.textRenderer, Text.literal(bind.title), x + 8, y + 8, 0xFFFFFF);
-				context.drawTextWithShadow(client.textRenderer, Text.literal(bind.cmd), x + 8, y + 16, 0x888888);
+				String title = truncateStringWithEllipses(bind.title, 32);
+				String cmd = truncateStringWithEllipses(bind.cmd, 32);
+
+				context.drawTextWithShadow(client.textRenderer, Text.literal(title), x + 8, y + 8, 0xFFFFFF);
+				context.drawTextWithShadow(client.textRenderer, Text.literal(cmd), x + 8, y + 16, 0x888888);
 
 				keyButton.setX(x + entryWidth - 64 - 4);
 				keyButton.setY(y);
@@ -176,11 +171,11 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
 		if (selectedEntry != null) {
-			if (keyCode == GLFW.GLFW_KEY_ESCAPE)
-				client.options.setKeyCode(selectedEntry.bind.bind, InputUtil.UNKNOWN_KEY);
-			else
-				client.options.setKeyCode(selectedEntry.bind.bind, InputUtil.fromKeyCode(keyCode, scanCode));
-			KeyBinding.updateKeysByCode();
+			if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+				selectedEntry.bind.key = InputUtil.UNKNOWN_KEY;
+			} else {
+				selectedEntry.bind.key = InputUtil.fromKeyCode(keyCode, scanCode);
+			}
 
 			selectedEntry.update();
 			selectedEntry = null;
@@ -193,12 +188,19 @@ public class BindMenuScreen extends Screen implements ModMenuApi {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (selectedEntry != null) {
-			client.options.setKeyCode(selectedEntry.bind.bind, InputUtil.Type.MOUSE.createFromCode(button));
-			KeyBinding.updateKeysByCode();
+			selectedEntry.bind.key = InputUtil.Type.MOUSE.createFromCode(button);
 			selectedEntry.update();
 			selectedEntry = null;
 			return true;
 		}
 		return super.mouseClicked(mouseX, mouseY, button);
+	}
+
+	public static String truncateStringWithEllipses(String str, int maxLength) {
+		if (str.length() > maxLength) {
+			return str.substring(0, maxLength) + "...";
+		} else {
+			return str;
+		}
 	}
 }

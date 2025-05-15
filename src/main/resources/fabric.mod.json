@@ -23,18 +23,14 @@
 			"xyz.ryhon.chatbinds.ModMenuAPIImpl"
 		]
 	},
-	"mixins": [
-		"chat-binds.mixins.json"
-	],
-	"accessWidener": "chatbinds.accesswidener",
 	"depends": {
 		"fabricloader": ">=0.15.0",
-		"minecraft": "~1.20.4",
-		"java": ">=17",
+		"minecraft": "1.21.4",
+		"java": ">=21",
 		"fabric-api": "*"
 	},
 	"suggests": {
-		"another-mod": "*"
+		"modmenu": ">=9"
 	},
 	"custom":
 	{

@@ -6,11 +6,12 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.TextWidget;
-import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 
 public class AddChatScreen extends Screen {
+	private final Screen parent;
+
 	TextFieldWidget titleBox;
 	TextFieldWidget commandBox;
 
@@ -18,21 +19,20 @@ public class AddChatScreen extends Screen {
 	ButtonWidget addButton;
 	ButtonWidget cancelButton;
 
-	Screen parent;
-
 	String cmd;
 	InputUtil.Key key = InputUtil.UNKNOWN_KEY;
 	boolean listening;
 
 	public AddChatScreen(String cmd_, Screen parent) {
-		super(Text.empty());
+		super(Text.translatable("chatbinds.key.add_chat"));
 		cmd = cmd_;
 		this.parent = parent;
 	}
 
 	@Override
 	protected void init() {
-		TextWidget titleText = new TextWidget(Text.translatable("chatbinds.addScreen.title"), client.textRenderer);
+		if (client == null) return;
+        TextWidget titleText = new TextWidget(Text.translatable("chatbinds.addScreen.title"), client.textRenderer);
 		titleText.setX(width / 4);
 		titleText.setY((height / 2) - 64);
 		addDrawable(titleText);
@@ -50,6 +50,7 @@ public class AddChatScreen extends Screen {
 		commandBox = new TextFieldWidget(client.textRenderer, width / 2, 24, Text.empty());
 		titleBox.setChangedListener(this::onCommandChanged);
 		commandBox.setPosition(width / 2 - (commandBox.getWidth() / 2), commandText.getY() + commandText.getHeight());
+		commandBox.setMaxLength(256);
 		addDrawable(commandBox);
 		addSelectableChild(commandBox);
 		this.setInitialFocus(commandBox);
@@ -146,20 +147,19 @@ public class AddChatScreen extends Screen {
 		String cmd = commandBox.getText().strip();
 		String title = titleBox.getText().strip();
 
-		if (cmd.length() == 0)
+		if (cmd.isEmpty())
 			return;
-		if (title.length() == 0)
+		if (title.isEmpty())
 			title = cmd;
 
-		client.options.setKeyCode(ChatBinds.registerCommand(cmd, title).bind, key);
-		KeyBinding.updateKeysByCode();
-
+		ChatBinds.registerUserBind(title, cmd, key);
 		ChatBinds.saveConfig();
 		close();
 	}
 
 	@Override
 	public void close() {
+		if (client == null) return;
 		client.setScreen(parent);
-	}
+    }
 }
